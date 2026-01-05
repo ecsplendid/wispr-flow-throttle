@@ -83,7 +83,10 @@ cd wispr-flow-throttle
    - Enable **"Unfreeze Wispr Flow on fn press"**
 
 6. **Grant permissions:**
-   - Karabiner needs Accessibility permissions
+   - **Karabiner-Core-Service** needs **Input Monitoring** permission:
+     - System Settings → Privacy & Security → Input Monitoring
+     - Add and enable `Karabiner-Core-Service`
+   - Karabiner-Elements needs Accessibility permissions
    - App Tamer needs Accessibility permissions
 
 ## Configuration
