@@ -18,7 +18,7 @@ This drains battery and heats up your Mac, even if you only dictate occasionally
 This tool automatically:
 
 1. **Throttles** Wispr Flow to near-zero CPU when you're not using it
-2. **Wakes** it instantly when you press **⌘⇧W** (Command+Shift+W)
+2. **Wakes** it instantly when you press **⌘`** (Command+Backtick)
 3. **Re-throttles** after 5 minutes of inactivity
 4. Shows **notifications** so you know the current state
 
@@ -74,7 +74,7 @@ cd wispr-flow-throttle
    - Open **System Settings → Keyboard → Keyboard Shortcuts**
    - Click **Services** in the sidebar
    - Find **"Unfreeze Wispr Flow"** under General
-   - Double-click and press **⌘⇧W** (or your preferred shortcut)
+   - Double-click and press **⌘`** (or your preferred shortcut)
 
 5. **Grant permissions:**
    - App Tamer needs **Accessibility** permissions:
@@ -116,7 +116,7 @@ To change the keyboard shortcut:
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  macOS Services │────▶│  unfreeze.sh     │────▶│  App Tamer      │
-│  (⌘⇧W hotkey)   │     │  (wake Wispr)    │     │  (stop no)      │
+│  (⌘` hotkey)    │     │  (wake Wispr)    │     │  (stop no)      │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
                                  │
                                  │ writes timestamp
@@ -133,7 +133,7 @@ To change the keyboard shortcut:
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
-1. **macOS Services** detects **⌘⇧W** keyboard shortcut
+1. **macOS Services** detects **⌘`** keyboard shortcut
 2. Runs `unfreeze-wispr.sh` which wakes Wispr Flow via App Tamer
 3. Script records timestamp of last use
 4. **LaunchAgent** runs every 60 seconds checking the timestamp
