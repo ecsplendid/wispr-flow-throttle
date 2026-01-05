@@ -20,14 +20,15 @@ rm -rf "$INSTALL_DIR"
 echo "  [OK] Scripts removed"
 
 echo ""
-echo "Removing Quick Action..."
-rm -rf "$HOME/Library/Services/Unfreeze Wispr Flow.workflow"
-echo "  [OK] Quick Action removed"
-
-echo ""
 echo "Cleaning up state files..."
 rm -f "$HOME/.wispr_last_use" "$HOME/.wispr_frozen"
 echo "  [OK] State files removed"
+
+echo ""
+echo "Resetting App Tamer settings for Wispr Flow..."
+defaults write com.stclairsoft.AppTamer "com.electron.wispr-flow" -dict-add pauseInBackground -int 0 limitInBackground -int 0
+defaults write com.stclairsoft.AppTamer "com.electron.wispr-flow.accessibility-mac-app" -dict-add pauseInBackground -int 0 limitInBackground -int 0
+echo "  [OK] App Tamer settings reset"
 
 echo ""
 echo "Unthrottling Wispr Flow..."
@@ -39,5 +40,6 @@ echo "========================================"
 echo "Uninstallation complete!"
 echo "========================================"
 echo ""
-echo "Note: You may want to manually remove the keyboard shortcut from:"
-echo "  System Settings → Keyboard → Keyboard Shortcuts → Services"
+echo "Note: Manually remove the Shortcuts you created:"
+echo "  - Open Shortcuts app"
+echo "  - Delete 'Unfreeze Wispr' and 'Freeze Wispr'"

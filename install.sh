@@ -35,6 +35,20 @@ else
     echo "  [OK] Wispr Flow found"
 fi
 
+# Check macOS version (Tahoe = 26.x)
+OS_VERSION=$(sw_vers -productVersion | cut -d. -f1)
+if [ "$OS_VERSION" -lt 26 ]; then
+    echo "WARNING: This tool requires macOS Tahoe (26) or later for Spotlight Quick Keys."
+    echo "Your version: $(sw_vers -productVersion)"
+    echo "Continue anyway? (y/n)"
+    read -r response
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+else
+    echo "  [OK] macOS Tahoe or later detected"
+fi
+
 echo ""
 echo "Installing scripts..."
 
@@ -43,25 +57,18 @@ mkdir -p "$INSTALL_DIR"
 
 # Copy scripts
 cp "$SCRIPT_DIR/unfreeze-wispr.sh" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/freeze-wispr.sh" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/check-wispr-freeze.sh" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/unfreeze-wispr.sh"
+chmod +x "$INSTALL_DIR/freeze-wispr.sh"
 chmod +x "$INSTALL_DIR/check-wispr-freeze.sh"
 
 echo "  [OK] Scripts installed to $INSTALL_DIR"
 
 echo ""
-echo "Installing Quick Action (for keyboard shortcut)..."
-
-# Copy Quick Action workflow
-mkdir -p "$HOME/Library/Services"
-cp -r "$SCRIPT_DIR/services/Unfreeze Wispr Flow.workflow" "$HOME/Library/Services/"
-
-echo "  [OK] Quick Action installed"
-
-echo ""
 echo "Installing LaunchAgent..."
 
-# Create LaunchAgent
+# Create LaunchAgent with 15-second check interval
 cat > "$HOME/Library/LaunchAgents/com.local.wispr-freeze.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -74,7 +81,7 @@ cat > "$HOME/Library/LaunchAgents/com.local.wispr-freeze.plist" << EOF
         <string>$INSTALL_DIR/check-wispr-freeze.sh</string>
     </array>
     <key>StartInterval</key>
-    <integer>60</integer>
+    <integer>15</integer>
     <key>EnvironmentVariables</key>
     <dict>
         <key>WISPR_TIMEOUT</key>
@@ -93,22 +100,47 @@ launchctl load "$HOME/Library/LaunchAgents/com.local.wispr-freeze.plist"
 echo "  [OK] LaunchAgent installed and loaded"
 
 echo ""
+echo "Configuring App Tamer..."
+
+# Set up App Tamer to freeze Wispr Flow by default
+defaults write com.stclairsoft.AppTamer "com.electron.wispr-flow" -dict-add pauseInBackground -int 1 limitInBackground -int 0
+defaults write com.stclairsoft.AppTamer "com.electron.wispr-flow.accessibility-mac-app" -dict-add pauseInBackground -int 1 limitInBackground -int 0
+
+echo "  [OK] App Tamer configured to freeze Wispr Flow"
+
+echo ""
 echo "========================================"
 echo "Installation complete!"
 echo "========================================"
 echo ""
-echo "NEXT STEPS:"
+echo "NEXT STEPS - Create Spotlight Quick Keys:"
 echo ""
-echo "1. Set up keyboard shortcut:"
-echo "   - Open System Settings → Keyboard → Keyboard Shortcuts"
-echo "   - Click 'Services' in the sidebar"
-echo "   - Find 'Unfreeze Wispr Flow' under General"
-echo "   - Double-click and press ⌘\` (or your preferred shortcut)"
+echo "1. Open the Shortcuts app"
 echo ""
-echo "2. Ensure App Tamer has Accessibility permissions:"
-echo "   System Settings → Privacy & Security → Accessibility"
+echo "2. Create 'Unfreeze Wispr' shortcut:"
+echo "   - Click + to create new shortcut"
+echo "   - Add action: Run Shell Script"
+echo "   - Paste: $INSTALL_DIR/unfreeze-wispr.sh"
+echo "   - Name it 'Unfreeze Wispr'"
+echo "   - In sidebar, enable 'Show in Spotlight'"
+echo "   - Open Spotlight (⌘Space), search 'Unfreeze Wispr'"
+echo "   - Right-click → Add Quick Key → type 'uw'"
 echo ""
-echo "3. Test: Press your shortcut to unfreeze Wispr Flow"
-echo "   After 5 minutes idle, it will auto-throttle"
+echo "3. Create 'Freeze Wispr' shortcut:"
+echo "   - Click + to create new shortcut"
+echo "   - Add action: Run Shell Script"
+echo "   - Paste: $INSTALL_DIR/freeze-wispr.sh"
+echo "   - Name it 'Freeze Wispr'"
+echo "   - Enable 'Show in Spotlight'"
+echo "   - Add Quick Key: 'fw'"
+echo ""
+echo "4. Add Wispr Flow to Login Items:"
+echo "   - System Settings → General → Login Items"
+echo "   - Add Wispr Flow (it will start frozen)"
+echo ""
+echo "Usage:"
+echo "  ⌘Space → uw → Enter  (wake Wispr)"
+echo "  ⌘Space → fw → Enter  (freeze Wispr)"
+echo "  Auto-freezes after 5 min idle"
 echo ""
 echo "To uninstall, run: ./uninstall.sh"

@@ -9,7 +9,7 @@
         <string>$HOME/Library/Scripts/WisprThrottle/check-wispr-freeze.sh</string>
     </array>
     <key>StartInterval</key>
-    <integer>60</integer>
+    <integer>15</integer>
     <key>EnvironmentVariables</key>
     <dict>
         <key>WISPR_TIMEOUT</key>

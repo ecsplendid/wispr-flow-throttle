@@ -1,6 +1,8 @@
 # Wispr Flow Auto-Throttle for macOS
 
-Automatically throttle [Wispr Flow](https://wisprflow.ai/) when not in use to save CPU and battery, then instantly wake it with a keyboard shortcut.
+Automatically throttle [Wispr Flow](https://wisprflow.ai/) when not in use to save CPU and battery. Wake it instantly with a Spotlight Quick Key.
+
+![Spotlight Quick Key](images/spotlight-quick-key.png)
 
 ## The Problem
 
@@ -17,32 +19,33 @@ This drains battery and heats up your Mac, even if you only dictate occasionally
 
 This tool automatically:
 
-1. **Throttles** Wispr Flow to near-zero CPU when you're not using it
-2. **Wakes** it instantly when you press **⌘`** (Command+Backtick)
-3. **Re-throttles** after 5 minutes of inactivity
-4. Shows **notifications** so you know the current state
+1. **Freezes Wispr Flow by default** - near-zero CPU when not in use
+2. **Wakes instantly** - type `uw` in Spotlight (⌘Space)
+3. **Auto-freezes after idle** - 5 minutes without dictation
+4. **Smart activity detection** - checks Wispr logs for recent transcriptions
+5. **Shows notifications** - so you know the current state
+
+![Frozen Notification](images/notification-frozen.png)
 
 ### CPU & Battery Savings
 
 Tested on **MacBook Pro M4 Max (128GB RAM)**:
 
-| State | CPU Usage | CPU Time (per hour) | Impact |
-|-------|-----------|---------------------|--------|
-| Normal (idle) | ~11% | ~6.6 min | Significant battery drain |
-| **Throttled** | ~0% | ~0 min | Minimal impact |
-| **Savings** | **~100%** | **~6.6 min/hr saved** | Extended battery life |
-
-*CPU percentages shown are aggregate across all Wispr Flow processes (10+ Electron helpers). On Apple Silicon, even "small" percentages translate to meaningful power consumption when sustained 24/7.*
+| State | CPU Usage | Impact |
+|-------|-----------|--------|
+| Normal (idle) | ~11% | Significant battery drain |
+| **Frozen** | ~0% | Minimal impact |
+| **Savings** | **~100%** | Extended battery life |
 
 ## Requirements
 
-- **macOS Sonoma or later** (tested on macOS 15 Sequoia)
+- **macOS Tahoe (26)** or later - uses Spotlight Quick Keys
 - **[Wispr Flow](https://wisprflow.ai/)** installed
 - **[App Tamer](https://www.stclairsoft.com/AppTamer/)** ($15, required for process throttling)
 
 ## Installation
 
-### Quick Install
+### 1. Install Scripts
 
 ```bash
 git clone https://github.com/ecsplendid/wispr-flow-throttle.git
@@ -50,73 +53,49 @@ cd wispr-flow-throttle
 ./install.sh
 ```
 
-### Manual Installation
+### 2. Create Spotlight Shortcuts
 
-1. **Copy scripts:**
-   ```bash
-   mkdir -p ~/Library/Scripts/WisprThrottle
-   cp unfreeze-wispr.sh check-wispr-freeze.sh ~/Library/Scripts/WisprThrottle/
-   chmod +x ~/Library/Scripts/WisprThrottle/*.sh
-   ```
+Open the **Shortcuts** app and create two shortcuts:
 
-2. **Install LaunchAgent** (for auto-throttle):
-   ```bash
-   cp launchd/com.local.wispr-freeze.plist ~/Library/LaunchAgents/
-   launchctl load ~/Library/LaunchAgents/com.local.wispr-freeze.plist
-   ```
+#### Unfreeze Wispr (`uw`)
 
-3. **Install Quick Action** (for keyboard shortcut):
-   ```bash
-   cp -r "services/Unfreeze Wispr Flow.workflow" ~/Library/Services/
-   ```
+1. Click **+** to create new shortcut
+2. Add action: **Run Shell Script**
+3. Paste: `~/Library/Scripts/WisprThrottle/unfreeze-wispr.sh`
+4. Name it **"Unfreeze Wispr"**
+5. In the sidebar, enable **"Show in Spotlight"**
+6. Open Spotlight (⌘Space), search for "Unfreeze Wispr", right-click → **Add Quick Key** → type `uw`
 
-4. **Set keyboard shortcut:**
-   - Open **System Settings → Keyboard → Keyboard Shortcuts**
-   - Click **Services** in the sidebar
-   - Find **"Unfreeze Wispr Flow"** under General
-   - Double-click and press **⌘`** (or your preferred shortcut)
+![Shortcut Setup](images/shortcut-setup.png)
 
-5. **Grant permissions:**
-   - App Tamer needs **Accessibility** permissions:
-     - System Settings → Privacy & Security → Accessibility
-     - Add and enable `App Tamer`
+#### Freeze Wispr (`fw`)
 
-## Configuration
+1. Create another shortcut
+2. Add action: **Run Shell Script**
+3. Paste: `~/Library/Scripts/WisprThrottle/freeze-wispr.sh`
+4. Name it **"Freeze Wispr"**
+5. Enable **"Show in Spotlight"**
+6. Add Quick Key: `fw`
 
-### Timeout Duration
+### 3. Ensure App Tamer Starts at Login
 
-By default, Wispr Flow re-throttles after **5 minutes** of inactivity. To change this, edit the LaunchAgent:
+- Open **System Settings → General → Login Items**
+- Make sure **App Tamer** is listed (it should be by default)
 
-```bash
-nano ~/Library/LaunchAgents/com.local.wispr-freeze.plist
-```
+## Usage
 
-Change the `WISPR_TIMEOUT` value (in minutes):
-```xml
-<key>WISPR_TIMEOUT</key>
-<string>10</string>  <!-- 10 minutes -->
-```
-
-Then reload:
-```bash
-launchctl unload ~/Library/LaunchAgents/com.local.wispr-freeze.plist
-launchctl load ~/Library/LaunchAgents/com.local.wispr-freeze.plist
-```
-
-### Different Hotkey
-
-To change the keyboard shortcut:
-1. Open **System Settings → Keyboard → Keyboard Shortcuts**
-2. Click **Services** → **General**
-3. Find **"Unfreeze Wispr Flow"**
-4. Double-click and press your new shortcut
+| Action | How |
+|--------|-----|
+| **Wake Wispr** | ⌘Space → type `uw` → Enter |
+| **Freeze Wispr** | ⌘Space → type `fw` → Enter |
+| **Auto-freeze** | Happens automatically after 5 min idle |
 
 ## How It Works
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  macOS Services │────▶│  unfreeze.sh     │────▶│  App Tamer      │
-│  (⌘` hotkey)    │     │  (wake Wispr)    │     │  (stop no)      │
+│  Spotlight      │────▶│  unfreeze.sh     │────▶│  App Tamer      │
+│  Quick Key: uw  │     │  (wake Wispr)    │     │  (stop no)      │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
                                  │
                                  │ writes timestamp
@@ -126,18 +105,46 @@ To change the keyboard shortcut:
                          │  (timestamp file)│
                          └──────────────────┘
                                  ▲
-                                 │ checks every 60s
+                                 │ checks every 15s
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  launchd        │────▶│  check-freeze.sh │────▶│  App Tamer      │
-│  (periodic)     │     │  (re-throttle)   │     │  (stop yes)     │
+│  (periodic)     │     │  + log detection │     │  (stop yes)     │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
-1. **macOS Services** detects **⌘`** keyboard shortcut
-2. Runs `unfreeze-wispr.sh` which wakes Wispr Flow via App Tamer
-3. Script records timestamp of last use
-4. **LaunchAgent** runs every 60 seconds checking the timestamp
-5. After 5 minutes idle, tells App Tamer to throttle again
+### Smart Activity Detection
+
+The check script monitors Wispr Flow's logs (`~/Library/Logs/Wispr Flow/main.log`) for recent transcription activity. If you've dictated something in the last 5 minutes, it won't freeze - even if you didn't explicitly wake it.
+
+This means:
+- You can dictate → walk away → dictate again within 5 min → no need to type `uw`
+- Only after 5 minutes of complete inactivity does it freeze
+
+## Configuration
+
+### Timeout Duration
+
+Default is 5 minutes. To change, edit the LaunchAgent:
+
+```bash
+nano ~/Library/LaunchAgents/com.local.wispr-freeze.plist
+```
+
+Change `WISPR_TIMEOUT` value (in minutes):
+```xml
+<key>WISPR_TIMEOUT</key>
+<string>10</string>  <!-- 10 minutes -->
+```
+
+Reload:
+```bash
+launchctl unload ~/Library/LaunchAgents/com.local.wispr-freeze.plist
+launchctl load ~/Library/LaunchAgents/com.local.wispr-freeze.plist
+```
+
+### Check Interval
+
+Default is 15 seconds. Adjust `StartInterval` in the plist if needed.
 
 ## Uninstallation
 
@@ -145,60 +152,57 @@ To change the keyboard shortcut:
 ./uninstall.sh
 ```
 
-Or manually:
+Then manually remove the Shortcuts you created.
 
-```bash
-# Unload LaunchAgent
-launchctl unload ~/Library/LaunchAgents/com.local.wispr-freeze.plist
-rm ~/Library/LaunchAgents/com.local.wispr-freeze.plist
+## Design Decisions
 
-# Remove scripts
-rm -rf ~/Library/Scripts/WisprThrottle
-
-# Remove Quick Action
-rm -rf ~/Library/Services/"Unfreeze Wispr Flow.workflow"
-
-# Clean up state files
-rm -f ~/.wispr_last_use ~/.wispr_frozen
-
-# Unthrottle Wispr Flow
-osascript -e 'tell application "App Tamer" to wake "Wispr Flow"'
-```
-
-## Why App Tamer?
+### Why App Tamer?
 
 We tried using Unix signals (`SIGSTOP`/`SIGCONT`) to freeze Wispr Flow, but **macOS protects Electron apps** from being stopped this way. App Tamer uses private macOS APIs that can actually throttle GUI applications effectively.
 
-## Why Not Karabiner?
+### Why Spotlight Quick Keys?
 
-Karabiner-Elements has [known issues](https://github.com/pqrs-org/Karabiner-Elements/issues/4265) with shell command execution on M4 Macs. macOS Services provides a more reliable alternative that works across all Mac models.
+We initially tried:
+- **Karabiner-Elements** - Has [known issues](https://github.com/pqrs-org/Karabiner-Elements/issues/4265) with shell commands on M4 Macs
+- **macOS Services** - Unreliable, shortcuts disappear after reboot
 
-## Alternatives Considered
+Spotlight Quick Keys (new in macOS Tahoe) are the most reliable option.
 
-If you find Wispr Flow's resource usage unacceptable even with this tool, consider these lighter alternatives:
+### Why Frozen by Default?
 
-| App | CPU Idle | RAM | Processing |
-|-----|----------|-----|------------|
-| **Wispr Flow** | ~8-11% | 800MB | Cloud |
-| **HyperWhisper** | Minimal | Light | Local |
-| **Superwhisper** | Low | Varies | Local |
-| **VoiceInk** | Low | Light | Local |
+Wispr Flow uses significant CPU even when idle. By freezing it by default:
+- Boot your Mac → Wispr starts frozen → zero battery drain
+- Type `uw` only when you need to dictate
+- Auto-freezes when you're done
 
 ## Troubleshooting
 
-### Notifications not appearing
-Check that NotificationCenter isn't being throttled by App Tamer:
+### Wispr not detecting audio after unfreeze
+The accessibility helper may be frozen. Run:
 ```bash
-osascript -e 'tell application "App Tamer" to manage "NotificationCenter" stop no'
+~/Library/Scripts/WisprThrottle/unfreeze-wispr.sh
 ```
 
-### Keyboard shortcut not working
-1. Check System Settings → Keyboard → Keyboard Shortcuts → Services
-2. Ensure "Unfreeze Wispr Flow" is enabled with your shortcut
-3. Try removing and re-adding the shortcut
+### Notifications not appearing
+Check NotificationCenter isn't throttled:
+```bash
+osascript -e 'tell application "App Tamer" to wake "NotificationCenter"'
+```
 
-### Wispr Flow not throttling
-Ensure App Tamer is running and has Accessibility permissions.
+### Quick Keys not working
+1. Ensure the Shortcut has "Show in Spotlight" enabled
+2. Try searching the full name in Spotlight first
+3. Re-add the Quick Key from Spotlight (right-click → Add Quick Key)
+
+## Alternatives
+
+If Wispr Flow's resource usage is unacceptable even with this tool:
+
+| App | CPU Idle | Processing |
+|-----|----------|------------|
+| **Wispr Flow** | ~8-11% | Cloud |
+| **Superwhisper** | Low | Local |
+| **MacWhisper** | Low | Local |
 
 ## License
 
@@ -212,3 +216,4 @@ MIT License - see [LICENSE](LICENSE)
 
 - [Wispr Flow](https://wisprflow.ai/) for the excellent (if resource-hungry) dictation tool
 - [App Tamer](https://www.stclairsoft.com/AppTamer/) for making process throttling possible
+- macOS Tahoe Spotlight Quick Keys for reliable hotkey triggering
