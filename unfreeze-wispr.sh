@@ -2,7 +2,7 @@
 # Unfreeze Wispr Flow via App Tamer and record timestamp
 
 # Tell App Tamer to stop throttling Wispr Flow
-osascript -e 'tell application "App Tamer" to manage "Wispr Flow" stop no' 2>/dev/null
+osascript -e 'tell application "App Tamer" to manage "Wispr Flow" stop no slow no' 2>/dev/null
 
 # Record the current timestamp
 date +%s > ~/.wispr_last_use

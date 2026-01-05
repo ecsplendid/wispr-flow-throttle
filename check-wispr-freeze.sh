@@ -10,7 +10,7 @@ FROZEN_MARKER=~/.wispr_frozen
 freeze_wispr() {
     # Only notify if not already frozen
     if [[ ! -f "$FROZEN_MARKER" ]]; then
-        osascript -e 'tell application "App Tamer" to manage "Wispr Flow" stop yes' 2>/dev/null
+        osascript -e 'tell application "App Tamer" to manage "Wispr Flow" stop yes slow no' 2>/dev/null
         touch "$FROZEN_MARKER"
         osascript -e 'display notification "Wispr Flow throttled to save CPU. Press fn to wake." with title "Wispr Flow Throttled"' 2>/dev/null
     fi
