@@ -23,19 +23,6 @@ if ! [ -d "/Applications/App Tamer.app" ]; then
 fi
 echo "  [OK] App Tamer found"
 
-# Check for Karabiner-Elements
-if ! [ -d "/Applications/Karabiner-Elements.app" ]; then
-    echo "  [!] Karabiner-Elements not found. Installing via Homebrew..."
-    if command -v brew &> /dev/null; then
-        brew install --cask karabiner-elements
-    else
-        echo "ERROR: Homebrew not found. Please install Karabiner-Elements manually:"
-        echo "  brew install --cask karabiner-elements"
-        exit 1
-    fi
-fi
-echo "  [OK] Karabiner-Elements found"
-
 # Check for Wispr Flow
 if ! [ -d "/Applications/Wispr Flow.app" ]; then
     echo "WARNING: Wispr Flow not found in /Applications"
@@ -60,43 +47,16 @@ cp "$SCRIPT_DIR/check-wispr-freeze.sh" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/unfreeze-wispr.sh"
 chmod +x "$INSTALL_DIR/check-wispr-freeze.sh"
 
-# Update paths in scripts to use install directory
-sed -i '' "s|/Users/timscarfe/git/syscleanup|$INSTALL_DIR|g" "$INSTALL_DIR/unfreeze-wispr.sh" 2>/dev/null || true
-sed -i '' "s|/Users/timscarfe/git/syscleanup|$INSTALL_DIR|g" "$INSTALL_DIR/check-wispr-freeze.sh" 2>/dev/null || true
-
 echo "  [OK] Scripts installed to $INSTALL_DIR"
 
 echo ""
-echo "Installing Karabiner configuration..."
+echo "Installing Quick Action (for keyboard shortcut)..."
 
-# Create Karabiner config directory
-mkdir -p "$HOME/.config/karabiner/assets/complex_modifications"
+# Copy Quick Action workflow
+mkdir -p "$HOME/Library/Services"
+cp -r "$SCRIPT_DIR/services/Unfreeze Wispr Flow.workflow" "$HOME/Library/Services/"
 
-# Create Karabiner config with correct path
-cat > "$HOME/.config/karabiner/assets/complex_modifications/wispr-freeze.json" << EOF
-{
-  "title": "Wispr Flow Auto-Throttle",
-  "rules": [
-    {
-      "description": "Unfreeze Wispr Flow on fn press",
-      "manipulators": [
-        {
-          "type": "basic",
-          "from": {
-            "apple_vendor_keyboard_key_code": "function"
-          },
-          "to": [
-            { "apple_vendor_keyboard_key_code": "function" },
-            { "shell_command": "$INSTALL_DIR/unfreeze-wispr.sh" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-EOF
-
-echo "  [OK] Karabiner config installed"
+echo "  [OK] Quick Action installed"
 
 echo ""
 echo "Installing LaunchAgent..."
@@ -139,14 +99,16 @@ echo "========================================"
 echo ""
 echo "NEXT STEPS:"
 echo ""
-echo "1. Open Karabiner-Elements"
-echo "2. Go to Complex Modifications -> Add rule"
-echo "3. Enable 'Unfreeze Wispr Flow on fn press'"
+echo "1. Set up keyboard shortcut:"
+echo "   - Open System Settings → Keyboard → Keyboard Shortcuts"
+echo "   - Click 'Services' in the sidebar"
+echo "   - Find 'Unfreeze Wispr Flow' under General"
+echo "   - Double-click and press ⌘⇧W (or your preferred shortcut)"
 echo ""
-echo "4. Ensure App Tamer and Karabiner have Accessibility permissions:"
-echo "   System Settings -> Privacy & Security -> Accessibility"
+echo "2. Ensure App Tamer has Accessibility permissions:"
+echo "   System Settings → Privacy & Security → Accessibility"
 echo ""
-echo "5. Test by pressing fn - Wispr Flow should wake up"
+echo "3. Test: Press your shortcut to unfreeze Wispr Flow"
 echo "   After 5 minutes idle, it will auto-throttle"
 echo ""
 echo "To uninstall, run: ./uninstall.sh"

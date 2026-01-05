@@ -1,6 +1,6 @@
 # Wispr Flow Auto-Throttle for macOS
 
-Automatically throttle [Wispr Flow](https://wisprflow.ai/) when not in use to save CPU and battery, then instantly wake it when you press the push-to-talk hotkey.
+Automatically throttle [Wispr Flow](https://wisprflow.ai/) when not in use to save CPU and battery, then instantly wake it with a keyboard shortcut.
 
 ## The Problem
 
@@ -17,8 +17,8 @@ This drains battery and heats up your Mac, even if you only dictate occasionally
 
 This tool automatically:
 
-1. **Throttles** Wispr Flow to ~1.5% CPU when you're not using it
-2. **Wakes** it instantly when you press the `fn` key (push-to-talk)
+1. **Throttles** Wispr Flow to near-zero CPU when you're not using it
+2. **Wakes** it instantly when you press **⌘⇧W** (Command+Shift+W)
 3. **Re-throttles** after 5 minutes of inactivity
 4. Shows **notifications** so you know the current state
 
@@ -29,18 +29,16 @@ Tested on **MacBook Pro M4 Max (128GB RAM)**:
 | State | CPU Usage | CPU Time (per hour) | Impact |
 |-------|-----------|---------------------|--------|
 | Normal (idle) | ~11% | ~6.6 min | Significant battery drain |
-| **Throttled** | ~1.5% | ~0.9 min | Minimal impact |
-| **Savings** | **~85%** | **~5.7 min/hr saved** | Extended battery life |
+| **Throttled** | ~0% | ~0 min | Minimal impact |
+| **Savings** | **~100%** | **~6.6 min/hr saved** | Extended battery life |
 
 *CPU percentages shown are aggregate across all Wispr Flow processes (10+ Electron helpers). On Apple Silicon, even "small" percentages translate to meaningful power consumption when sustained 24/7.*
 
 ## Requirements
 
-- **macOS** (tested on Ventura/Sonoma)
+- **macOS Sonoma or later** (tested on macOS 15 Sequoia)
 - **[Wispr Flow](https://wisprflow.ai/)** installed
 - **[App Tamer](https://www.stclairsoft.com/AppTamer/)** ($15, required for process throttling)
-- **[Karabiner-Elements](https://karabiner-elements.pqrs.org/)** (free, for hotkey detection)
-- **Homebrew** (for installing Karabiner)
 
 ## Installation
 
@@ -54,40 +52,34 @@ cd wispr-flow-throttle
 
 ### Manual Installation
 
-1. **Install Karabiner-Elements:**
+1. **Copy scripts:**
    ```bash
-   brew install --cask karabiner-elements
+   mkdir -p ~/Library/Scripts/WisprThrottle
+   cp unfreeze-wispr.sh check-wispr-freeze.sh ~/Library/Scripts/WisprThrottle/
+   chmod +x ~/Library/Scripts/WisprThrottle/*.sh
    ```
 
-2. **Copy scripts:**
-   ```bash
-   cp unfreeze-wispr.sh check-wispr-freeze.sh ~/Library/Scripts/
-   chmod +x ~/Library/Scripts/unfreeze-wispr.sh ~/Library/Scripts/check-wispr-freeze.sh
-   ```
-
-3. **Install Karabiner config:**
-   ```bash
-   mkdir -p ~/.config/karabiner/assets/complex_modifications
-   cp karabiner/wispr-freeze.json ~/.config/karabiner/assets/complex_modifications/
-   ```
-
-4. **Install LaunchAgent:**
+2. **Install LaunchAgent** (for auto-throttle):
    ```bash
    cp launchd/com.local.wispr-freeze.plist ~/Library/LaunchAgents/
    launchctl load ~/Library/LaunchAgents/com.local.wispr-freeze.plist
    ```
 
-5. **Enable Karabiner rule:**
-   - Open Karabiner-Elements
-   - Go to **Complex Modifications** → **Add rule**
-   - Enable **"Unfreeze Wispr Flow on fn press"**
+3. **Install Quick Action** (for keyboard shortcut):
+   ```bash
+   cp -r "services/Unfreeze Wispr Flow.workflow" ~/Library/Services/
+   ```
 
-6. **Grant permissions:**
-   - **Karabiner-Core-Service** needs **Input Monitoring** permission:
-     - System Settings → Privacy & Security → Input Monitoring
-     - Add and enable `Karabiner-Core-Service`
-   - Karabiner-Elements needs Accessibility permissions
-   - App Tamer needs Accessibility permissions
+4. **Set keyboard shortcut:**
+   - Open **System Settings → Keyboard → Keyboard Shortcuts**
+   - Click **Services** in the sidebar
+   - Find **"Unfreeze Wispr Flow"** under General
+   - Double-click and press **⌘⇧W** (or your preferred shortcut)
+
+5. **Grant permissions:**
+   - App Tamer needs **Accessibility** permissions:
+     - System Settings → Privacy & Security → Accessibility
+     - Add and enable `App Tamer`
 
 ## Configuration
 
@@ -96,7 +88,6 @@ cd wispr-flow-throttle
 By default, Wispr Flow re-throttles after **5 minutes** of inactivity. To change this, edit the LaunchAgent:
 
 ```bash
-# Edit the plist
 nano ~/Library/LaunchAgents/com.local.wispr-freeze.plist
 ```
 
@@ -114,22 +105,20 @@ launchctl load ~/Library/LaunchAgents/com.local.wispr-freeze.plist
 
 ### Different Hotkey
 
-If you use a different push-to-talk key, edit the Karabiner config:
-
-```bash
-nano ~/.config/karabiner/assets/complex_modifications/wispr-freeze.json
-```
-
-Change `"apple_vendor_keyboard_key_code": "function"` to your preferred key.
+To change the keyboard shortcut:
+1. Open **System Settings → Keyboard → Keyboard Shortcuts**
+2. Click **Services** → **General**
+3. Find **"Unfreeze Wispr Flow"**
+4. Double-click and press your new shortcut
 
 ## How It Works
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Karabiner-     │────▶│  unfreeze.sh     │────▶│  App Tamer      │
-│  Elements       │     │  (on fn press)   │     │  (stop no)      │
-│  (fn key hook)  │     └──────────────────┘     └─────────────────┘
-└─────────────────┘              │
+│  macOS Services │────▶│  unfreeze.sh     │────▶│  App Tamer      │
+│  (⌘⇧W hotkey)   │     │  (wake Wispr)    │     │  (stop no)      │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                                 │
                                  │ writes timestamp
                                  ▼
                          ┌──────────────────┐
@@ -144,9 +133,9 @@ Change `"apple_vendor_keyboard_key_code": "function"` to your preferred key.
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
-1. **Karabiner-Elements** detects `fn` key press
-2. Passes through to Wispr Flow AND runs `unfreeze-wispr.sh`
-3. Script tells **App Tamer** to stop throttling + records timestamp
+1. **macOS Services** detects **⌘⇧W** keyboard shortcut
+2. Runs `unfreeze-wispr.sh` which wakes Wispr Flow via App Tamer
+3. Script records timestamp of last use
 4. **LaunchAgent** runs every 60 seconds checking the timestamp
 5. After 5 minutes idle, tells App Tamer to throttle again
 
@@ -164,21 +153,25 @@ launchctl unload ~/Library/LaunchAgents/com.local.wispr-freeze.plist
 rm ~/Library/LaunchAgents/com.local.wispr-freeze.plist
 
 # Remove scripts
-rm ~/Library/Scripts/unfreeze-wispr.sh ~/Library/Scripts/check-wispr-freeze.sh
+rm -rf ~/Library/Scripts/WisprThrottle
 
-# Remove Karabiner config
-rm ~/.config/karabiner/assets/complex_modifications/wispr-freeze.json
+# Remove Quick Action
+rm -rf ~/Library/Services/"Unfreeze Wispr Flow.workflow"
 
 # Clean up state files
 rm -f ~/.wispr_last_use ~/.wispr_frozen
 
 # Unthrottle Wispr Flow
-osascript -e 'tell application "App Tamer" to manage "Wispr Flow" stop no'
+osascript -e 'tell application "App Tamer" to wake "Wispr Flow"'
 ```
 
 ## Why App Tamer?
 
 We tried using Unix signals (`SIGSTOP`/`SIGCONT`) to freeze Wispr Flow, but **macOS protects Electron apps** from being stopped this way. App Tamer uses private macOS APIs that can actually throttle GUI applications effectively.
+
+## Why Not Karabiner?
+
+Karabiner-Elements has [known issues](https://github.com/pqrs-org/Karabiner-Elements/issues/4265) with shell command execution on M4 Macs. macOS Services provides a more reliable alternative that works across all Mac models.
 
 ## Alternatives Considered
 
@@ -199,11 +192,10 @@ Check that NotificationCenter isn't being throttled by App Tamer:
 osascript -e 'tell application "App Tamer" to manage "NotificationCenter" stop no'
 ```
 
-### fn key not triggering unfreeze
-1. Open Karabiner-EventViewer
-2. Press fn key
-3. Check what key code appears
-4. Update the Karabiner config if needed
+### Keyboard shortcut not working
+1. Check System Settings → Keyboard → Keyboard Shortcuts → Services
+2. Ensure "Unfreeze Wispr Flow" is enabled with your shortcut
+3. Try removing and re-adding the shortcut
 
 ### Wispr Flow not throttling
 Ensure App Tamer is running and has Accessibility permissions.
@@ -220,4 +212,3 @@ MIT License - see [LICENSE](LICENSE)
 
 - [Wispr Flow](https://wisprflow.ai/) for the excellent (if resource-hungry) dictation tool
 - [App Tamer](https://www.stclairsoft.com/AppTamer/) for making process throttling possible
-- [Karabiner-Elements](https://karabiner-elements.pqrs.org/) for powerful keyboard customization

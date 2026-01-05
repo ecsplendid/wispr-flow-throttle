@@ -20,9 +20,9 @@ rm -rf "$INSTALL_DIR"
 echo "  [OK] Scripts removed"
 
 echo ""
-echo "Removing Karabiner config..."
-rm -f "$HOME/.config/karabiner/assets/complex_modifications/wispr-freeze.json"
-echo "  [OK] Karabiner config removed"
+echo "Removing Quick Action..."
+rm -rf "$HOME/Library/Services/Unfreeze Wispr Flow.workflow"
+echo "  [OK] Quick Action removed"
 
 echo ""
 echo "Cleaning up state files..."
@@ -31,7 +31,7 @@ echo "  [OK] State files removed"
 
 echo ""
 echo "Unthrottling Wispr Flow..."
-osascript -e 'tell application "App Tamer" to manage "Wispr Flow" stop no' 2>/dev/null || true
+osascript -e 'tell application "App Tamer" to wake "Wispr Flow"' 2>/dev/null || true
 echo "  [OK] Wispr Flow unthrottled"
 
 echo ""
@@ -39,5 +39,5 @@ echo "========================================"
 echo "Uninstallation complete!"
 echo "========================================"
 echo ""
-echo "Note: Karabiner-Elements and App Tamer were NOT uninstalled."
-echo "You may need to manually disable the Karabiner rule if it's still enabled."
+echo "Note: You may want to manually remove the keyboard shortcut from:"
+echo "  System Settings → Keyboard → Keyboard Shortcuts → Services"
