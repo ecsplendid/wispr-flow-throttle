@@ -13,10 +13,10 @@ check_recent_transcription() {
     if [[ ! -f "$WISPR_LOG" ]]; then
         return 1
     fi
-    
+
     local now=$(date +%s)
     local cutoff=$((now - TIMEOUT_SECONDS))
-    
+
     # Get recent dictation events
     while IFS= read -r line; do
         if [[ $line =~ ^\[([0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}) ]]; then
@@ -27,24 +27,20 @@ check_recent_transcription() {
             fi
         fi
     done < <(grep -E "dictation stop|paste outcome.*success=true" "$WISPR_LOG" 2>/dev/null | tail -10)
-    
+
     return 1
 }
 
-# Function to throttle Wispr Flow via App Tamer
+# Function to freeze Wispr Flow using SIGSTOP (no App Tamer, no UI interaction)
 freeze_wispr() {
     if [[ ! -f "$FROZEN_MARKER" ]]; then
-        # Freeze main app
-        defaults write com.stclairsoft.AppTamer "com.electron.wispr-flow" -dict-add pauseInBackground -int 1 limitInBackground -int 0
-        # Freeze accessibility helper
-        defaults write com.stclairsoft.AppTamer "com.electron.wispr-flow.accessibility-mac-app" -dict-add pauseInBackground -int 1 limitInBackground -int 0
-        
-        osascript -e 'tell application "App Tamer" to quit' 2>/dev/null
-        sleep 0.5
-        open -a "App Tamer"
-        
+        # Find all Wispr Flow processes and send SIGSTOP
+        pids=$(pgrep -f "Wispr Flow")
+        if [[ -n "$pids" ]]; then
+            echo "$pids" | xargs kill -STOP 2>/dev/null
+        fi
+
         touch "$FROZEN_MARKER"
-        osascript -e 'display notification "Wispr Flow throttled. Type uw in Spotlight to wake." with title "Wispr Flow Throttled"' 2>/dev/null
     fi
 }
 

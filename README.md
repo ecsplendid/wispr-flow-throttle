@@ -23,9 +23,6 @@ This tool automatically:
 2. **Wakes instantly** - type `uw` in Spotlight (⌘Space)
 3. **Auto-freezes after idle** - 5 minutes without dictation
 4. **Smart activity detection** - checks Wispr logs for recent transcriptions
-5. **Shows notifications** - so you know the current state
-
-![Frozen Notification](images/notification-frozen.png)
 
 ### CPU & Battery Savings
 
@@ -41,7 +38,6 @@ Tested on **MacBook Pro M4 Max (128GB RAM)**:
 
 - **macOS Tahoe (26)** or later - uses Spotlight Quick Keys
 - **[Wispr Flow](https://wisprflow.ai/)** installed
-- **[App Tamer](https://www.stclairsoft.com/AppTamer/)** ($15, required for process throttling)
 
 ## Installation
 
@@ -77,11 +73,6 @@ Open the **Shortcuts** app and create two shortcuts:
 5. Enable **"Show in Spotlight"**
 6. Add Quick Key: `fw`
 
-### 3. Ensure App Tamer Starts at Login
-
-- Open **System Settings → General → Login Items**
-- Make sure **App Tamer** is listed (it should be by default)
-
 ## Usage
 
 | Action | How |
@@ -92,23 +83,25 @@ Open the **Shortcuts** app and create two shortcuts:
 
 ## How It Works
 
+Uses Unix signals (`SIGSTOP`/`SIGCONT`) to freeze and unfreeze Wispr Flow processes directly - no third-party tools required.
+
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Spotlight      │────▶│  unfreeze.sh     │────▶│  App Tamer      │
-│  Quick Key: uw  │     │  (wake Wispr)    │     │  (stop no)      │
+│  Spotlight      │────▶│  unfreeze.sh     │────▶│  kill -CONT     │
+│  Quick Key: uw  │     │  (wake Wispr)    │     │  (resume procs) │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
-                                 │
-                                 │ writes timestamp
-                                 ▼
-                         ┌──────────────────┐
-                         │  ~/.wispr_last   │
-                         │  (timestamp file)│
-                         └──────────────────┘
-                                 ▲
-                                 │ checks every 15s
+                                │
+                                │ writes timestamp
+                                ▼
+                        ┌──────────────────┐
+                        │  ~/.wispr_last   │
+                        │  (timestamp file)│
+                        └──────────────────┘
+                                ▲
+                                │ checks every 15s
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  launchd        │────▶│  check-freeze.sh │────▶│  App Tamer      │
-│  (periodic)     │     │  + log detection │     │  (stop yes)     │
+│  launchd        │────▶│  check-freeze.sh │────▶│  kill -STOP     │
+│  (periodic)     │     │  + log detection │     │  (freeze procs) │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
@@ -156,9 +149,12 @@ Then manually remove the Shortcuts you created.
 
 ## Design Decisions
 
-### Why App Tamer?
+### Why Direct Signals?
 
-We tried using Unix signals (`SIGSTOP`/`SIGCONT`) to freeze Wispr Flow, but **macOS protects Electron apps** from being stopped this way. App Tamer uses private macOS APIs that can actually throttle GUI applications effectively.
+We use `SIGSTOP` and `SIGCONT` to freeze/unfreeze processes directly. This approach:
+- Requires no third-party tools
+- Has zero UI interaction (no visual artifacts)
+- Works reliably on all macOS versions
 
 ### Why Spotlight Quick Keys?
 
@@ -178,18 +174,14 @@ Wispr Flow uses significant CPU even when idle. By freezing it by default:
 ## Troubleshooting
 
 ### Wispr not detecting audio after unfreeze
-The accessibility helper may be frozen. Run:
+
+All Wispr processes should resume together. If issues persist, try:
 ```bash
 ~/Library/Scripts/WisprThrottle/unfreeze-wispr.sh
 ```
 
-### Notifications not appearing
-Check NotificationCenter isn't throttled:
-```bash
-osascript -e 'tell application "App Tamer" to wake "NotificationCenter"'
-```
-
 ### Quick Keys not working
+
 1. Ensure the Shortcut has "Show in Spotlight" enabled
 2. Try searching the full name in Spotlight first
 3. Re-add the Quick Key from Spotlight (right-click → Add Quick Key)
@@ -215,5 +207,4 @@ MIT License - see [LICENSE](LICENSE)
 ## Acknowledgments
 
 - [Wispr Flow](https://wisprflow.ai/) for the excellent (if resource-hungry) dictation tool
-- [App Tamer](https://www.stclairsoft.com/AppTamer/) for making process throttling possible
 - macOS Tahoe Spotlight Quick Keys for reliable hotkey triggering
